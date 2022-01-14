@@ -12,35 +12,36 @@ const FILES_TO_CACHE = [
     "/service-worker.js"
 ];
   
-// install
-self.addEventListener("install", function (evt) {
-    // pre cache transaction data
-    evt.waitUntil(
-        caches.open(DATA_CACHE_NAME).then((cache) => cache.add("/api/transaction"))
+self.addEventListener("install", function (event) {
+    event.waitUntil(caches.open(DATA_CACHE_NAME)
+      .then((cache) => cache.add("/api/transaction"))
+      .catch(err => console.error(err))
     );
 
-    // pre cache all static assets
-    evt.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(FILES_TO_CACHE))
+    event.waitUntil(caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(FILES_TO_CACHE))
+      .catch(err => console.error(err))
     );
 
-    // tell the browser to activate this service worker immediately once it
-    // has finished installing
     self.skipWaiting();
 });
 
-// activate
+// self.addEventListener('install', (event) => {
+//   event.waitUntil(caches.open(DATA_CACHE_NAME)
+//       .then((cache) => cache.addAll(FILES_TO_CACHE))
+//       .then(self.skipWaiting())
+//   );
+// });
+
 self.addEventListener("activate", event => {
     const currentCaches = [CACHE_NAME, DATA_CACHE_NAME];
     event.waitUntil(
         caches
             .keys()
-            .then(cacheNames => {
-                return cacheNames.filter(
-                    cacheName => !currentCaches.includes(cacheName)
-                );
+            .then((cacheNames) => {
+                return cacheNames.filter(cacheName => !currentCaches.includes(cacheName));
             })
-            .then(cachesToDelete => {
+            .then((cachesToDelete) => {
                 return Promise.all(
                     cachesToDelete.map(cacheToDelete => {
                         return caches.delete(cacheToDelete);
@@ -52,15 +53,6 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
-    
-    if (
-      event.request.method !== "GET" ||
-      !event.request.url.startsWith(self.location.origin)
-    ) {
-      event.respondWith(fetch(event.request));
-      return;
-    }
-  
     if (event.request.url.includes("/api/transaction")) {
       event.respondWith(
         caches.open(DATA_CACHE_NAME).then(cache => {
@@ -74,4 +66,7 @@ self.addEventListener("fetch", event => {
       );
       return;
     }
+
+
+
   });
